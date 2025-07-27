@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Чат с обменом</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        #chat {
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+        #messages {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #444;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: #252525;
+            border-radius: 5px;
+        }
+        .message {
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            background: #3a3a3a;
+            max-width: 80%;
+        }
+        .my-message {
+            background: #4a76a8;
+            margin-left: auto;
+        }
+        #message-form {
+            display: flex;
+            gap: 10px;
+        }
+        #username {
+            width: 120px;
+            padding: 12px;
+            background: #333;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 5px;
+        }
+        #message-input {
+            flex: 1;
+            padding: 12px;
+            background: #333;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 5px;
+        }
+        button {
+            padding: 12px 24px;
+            background: #4a76a8;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #3a6590;
+        }
+    </style>
+</head>
+<body>
+    <div id="chat">
+        <h1>Чат с обменом</h1>
+        <div id="messages"></div>
+        <form id="message-form">
+            <input type="text" id="username" placeholder="Ваше имя" value="Аноним">
+            <input type="text" id="message-input" placeholder="Введите сообщение..." autocomplete="off" autofocus>
+            <button type="submit">Отправить</button>
+        </form>
+    </div>
+
+    <script>
+        const messagesDiv = document.getElementById('messages');
+        const messageInput = document.getElementById('message-input');
+        const usernameInput = document.getElementById('username');
+        const form = document.getElementById('message-form');
+
+        // Подключаемся к WebSocket серверу
+        const ws = new WebSocket('ws://localhost:8080');
+
+        ws.onopen = () => {
+            addSystemMessage('Подключено к чату');
+        };
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            addMessage(data.username, data.message);
+        };
+
+        ws.onerror = (error) => {
+            addSystemMessage('Ошибка соединения: ' + error.message);
+        };
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const message = messageInput.value.trim();
+            const username = usernameInput.value.trim() || 'Аноним';
+            
+            if (message) {
+                ws.send(JSON.stringify({
+                    username: username,
+                    message: message
+                }));
+                addMessage(username, message, true);
+                messageInput.value = '';
+            }
+        });
+
+        function addMessage(username, message, isMyMessage = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = isMyMessage ? 'message my-message' : 'message';
+            messageDiv.innerHTML = `<strong>${username}:</strong> ${message}`;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function addSystemMessage(text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            messageDiv.innerHTML = `<em>${text}</em>`;
+            messageDiv.style.backgroundColor = '#333';
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+    </script>
+</body>
+  </html>
